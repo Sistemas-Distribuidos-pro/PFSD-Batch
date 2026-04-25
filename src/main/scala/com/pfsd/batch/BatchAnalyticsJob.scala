@@ -233,5 +233,3 @@ object BatchAnalyticsJob {
         }
       }
       .toMap
-  }
-}
