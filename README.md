@@ -199,6 +199,55 @@ The job also prints a readable summary to console.
 
 If using S3 output, the same report subfolders are created under your selected `reports/run-<timestamp>/` prefix.
 
+## Synthetic Bulk History Generator
+
+This repository includes a second entrypoint to generate synthetic high-volume historical data compatible with the existing batch schemas.
+
+Entrypoint:
+
+- `com.pfsd.batch.generator.SyntheticHistoryGenerator`
+
+Purpose:
+
+- Create large local datasets (10k / 50k / 100k+) for stress-testing batch analytics.
+- Generate only `orders` and `alerts` history objects.
+- Keep the same historical contract used by the batch job, including `razones` and LocalDateTime array-style fields (`createdAt`, `detectedAt`).
+
+Generated local folders:
+
+- `generated-data/orders-bulk/year=YYYY/month=MM/day=DD/part-00001.json`
+- `generated-data/alerts-bulk/year=YYYY/month=MM/day=DD/part-00001.json`
+
+Generator arguments:
+
+- `--ordersCount=10000`
+- `--userCount=100`
+- `--alertRate=0.05`
+- `--outputBasePath=generated-data`
+- `--seed=42`
+- Optional: `--baseDate=2026-04-24`
+- Optional: `--daysSpan=30`
+- Optional: `--chunkSize=5000`
+
+Run generator (WSL/Linux):
+
+```bash
+sbt "runMain com.pfsd.batch.generator.SyntheticHistoryGenerator --ordersCount=10000 --userCount=100 --alertRate=0.05 --outputBasePath=generated-data --seed=42"
+```
+
+Upload generated bulk data to S3:
+
+```bash
+aws s3 cp --recursive generated-data/orders-bulk s3://pfsd-order-history/orders-bulk/
+aws s3 cp --recursive generated-data/alerts-bulk s3://pfsd-order-history/alerts-bulk/
+```
+
+Run the batch job against uploaded bulk prefixes:
+
+```bash
+sbt "run --ordersPath=s3a://pfsd-order-history/orders-bulk/ --alertsPath=s3a://pfsd-order-history/alerts-bulk/ --outputPath=s3a://pfsd-order-history/reports/run-20260424-1500"
+```
+
 ## Why this satisfies PFSD batch scope
 
 - Uses Scala + Spark only.
