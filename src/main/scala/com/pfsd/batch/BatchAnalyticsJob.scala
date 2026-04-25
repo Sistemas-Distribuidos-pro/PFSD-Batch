@@ -2,7 +2,7 @@ package com.pfsd.batch
 
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, SaveMode, SparkSession}
 
 import java.util.Properties
 
@@ -93,14 +93,22 @@ object BatchAnalyticsJob {
         StructField("userId", LongType, nullable = true),
         StructField("total", DecimalType(18, 2), nullable = true),
         StructField("itemCount", IntegerType, nullable = true),
-        StructField("createdAt", TimestampType, nullable = true)
+        StructField("createdAt", ArrayType(IntegerType), nullable = true)
       )
     )
 
     spark.read
       .schema(ordersSchema)
       .json(ordersPath)
-      .select("eventType", "storedAt", "orderId", "userId", "total", "itemCount", "createdAt")
+      .select(
+        col("eventType"),
+        col("storedAt"),
+        col("orderId"),
+        col("userId"),
+        col("total"),
+        col("itemCount"),
+        localDateTimeArrayToTimestamp(col("createdAt")).alias("createdAt")
+      )
   }
 
   private def readAlerts(spark: SparkSession, alertsPath: String): DataFrame = {
@@ -112,14 +120,39 @@ object BatchAnalyticsJob {
         StructField("userId", LongType, nullable = true),
         StructField("total", DecimalType(18, 2), nullable = true),
         StructField("razones", ArrayType(StringType), nullable = true),
-        StructField("detectedAt", TimestampType, nullable = true)
+        StructField("detectedAt", ArrayType(IntegerType), nullable = true)
       )
     )
 
     spark.read
       .schema(alertsSchema)
       .json(alertsPath)
-      .select("eventType", "storedAt", "orderId", "userId", "total", "razones", "detectedAt")
+      .select(
+        col("eventType"),
+        col("storedAt"),
+        col("orderId"),
+        col("userId"),
+        col("total"),
+        col("razones"),
+        localDateTimeArrayToTimestamp(col("detectedAt")).alias("detectedAt")
+      )
+  }
+
+  private def localDateTimeArrayToTimestamp(arrayCol: Column): Column = {
+    when(arrayCol.isNull || size(arrayCol) < 6, lit(null).cast(TimestampType))
+      .otherwise {
+        val nanos = coalesce(element_at(arrayCol, 7).cast("double"), lit(0.0))
+        val seconds = element_at(arrayCol, 6).cast("double") + (nanos / lit(1000000000.0))
+
+        make_timestamp(
+          element_at(arrayCol, 1).cast("int"),
+          element_at(arrayCol, 2).cast("int"),
+          element_at(arrayCol, 3).cast("int"),
+          element_at(arrayCol, 4).cast("int"),
+          element_at(arrayCol, 5).cast("int"),
+          seconds
+        )
+      }
   }
 
   private def writeOutputs(

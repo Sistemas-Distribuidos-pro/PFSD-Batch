@@ -111,6 +111,11 @@ README.md
 - sbt 1.12.x
 - AWS credentials with read access to S3 input paths
 
+## Recommended Execution Environment
+
+- Recommended: run from WSL/Linux for the most stable local Spark + Hadoop behavior.
+- On native Windows, Hadoop/winutils issues may appear (`HADOOP_HOME` / `winutils.exe`), especially during write stages.
+
 ## AWS Credentials (Local)
 
 Use one of the standard approaches:
@@ -150,7 +155,7 @@ Overrides are supported through command args or env vars.
 - `PFSD_OUTPUT_PATH`
 - `PFSD_TOP_N`
 
-## Run Locally
+## Run Locally (WSL/Linux recommended)
 
 ### 1) Compile
 
@@ -170,11 +175,15 @@ sbt run
 sbt "run --ordersPath=s3a://pfsd-order-history/orders/ --alertsPath=s3a://pfsd-order-history/alerts/ --outputPath=output/run-20260424-1500"
 ```
 
+This creates a timestamped local run folder under `output/run-<timestamp>/`.
+
 ### 4) Run with S3 output for reports
 
 ```bash
 sbt "run --ordersPath=s3a://pfsd-order-history/orders/ --alertsPath=s3a://pfsd-order-history/alerts/ --outputPath=s3a://pfsd-order-history/reports/run-20260424-1500"
 ```
+
+This stores reports under a prefix like `reports/run-<timestamp>/`.
 
 ## Expected Outputs
 
@@ -187,6 +196,8 @@ Spark writes outputs as folders with part files:
 - `output/alert-reason-frequency/`
 
 The job also prints a readable summary to console.
+
+If using S3 output, the same report subfolders are created under your selected `reports/run-<timestamp>/` prefix.
 
 ## Why this satisfies PFSD batch scope
 
