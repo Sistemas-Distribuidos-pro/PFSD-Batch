@@ -22,6 +22,7 @@ object BatchAnalyticsJob {
       .builder()
       .appName("PFSD Batch Analytics")
       .master("local[*]")
+      .config("spark.hadoop.fs.s3a.aws.credentials.provider", "com.amazonaws.auth.DefaultAWSCredentialsProviderChain")
       .getOrCreate()
 
     spark.sparkContext.setLogLevel("WARN")
@@ -156,7 +157,17 @@ object BatchAnalyticsJob {
   }
 
   private def scalarDouble(df: DataFrame, field: String): Double = {
-    Option(df.first().getAs[java.lang.Double](field)).map(_.doubleValue()).getOrElse(0.0)
+    Option(df.first().getAs[Any](field))
+      .map {
+        case d: java.lang.Double     => d.doubleValue()
+        case f: java.lang.Float      => f.doubleValue()
+        case l: java.lang.Long       => l.doubleValue()
+        case i: java.lang.Integer    => i.doubleValue()
+        case bd: java.math.BigDecimal => bd.doubleValue()
+        case n: java.lang.Number     => n.doubleValue()
+        case _                       => 0.0
+      }
+      .getOrElse(0.0)
   }
 
   private def loadConfig(args: Array[String]): JobConfig = {
@@ -168,14 +179,14 @@ object BatchAnalyticsJob {
         .get("ordersPath")
         .orElse(sys.env.get("PFSD_ORDERS_PATH"))
         .orElse(Option(defaults.getProperty("orders.path")))
-        .getOrElse("s3://pfsd-order-history/orders/")
+        .getOrElse("s3a://pfsd-order-history/orders/")
 
     val alertsPath =
       argMap
         .get("alertsPath")
         .orElse(sys.env.get("PFSD_ALERTS_PATH"))
         .orElse(Option(defaults.getProperty("alerts.path")))
-        .getOrElse("s3://pfsd-order-history/alerts/")
+        .getOrElse("s3a://pfsd-order-history/alerts/")
 
     val outputPath =
       argMap

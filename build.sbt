@@ -13,5 +13,8 @@ lazy val root = (project in file("."))
       "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.262"
     ),
     Compile / run / fork := true,
+    Compile / run / javaOptions ++= Seq(
+      "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED"
+    ),
     Compile / mainClass := Some("com.pfsd.batch.BatchAnalyticsJob")
   )

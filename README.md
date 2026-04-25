@@ -70,15 +70,19 @@ Important: this project preserves `razones` exactly and does not rename it.
 
 ## S3 Layout
 
+Spark/Hadoop S3 access in this project uses the `s3a://` connector, so S3 paths must use `s3a://` (not `s3://`).
+
 The job reads directly from these prefixes:
 
-- `s3://pfsd-order-history/orders/`
-- `s3://pfsd-order-history/alerts/`
+- `s3a://pfsd-order-history/orders/`
+- `s3a://pfsd-order-history/alerts/`
 
 Historical keys are expected in partitioned style paths such as:
 
-- `s3://pfsd-order-history/orders/year=YYYY/month=MM/day=DD/order-<timestamp>-<orderId>.json`
-- `s3://pfsd-order-history/alerts/year=YYYY/month=MM/day=DD/alert-<timestamp>-<orderId>.json`
+- `s3a://pfsd-order-history/orders/year=YYYY/month=MM/day=DD/order-<timestamp>-<orderId>.json`
+- `s3a://pfsd-order-history/alerts/year=YYYY/month=MM/day=DD/alert-<timestamp>-<orderId>.json`
+
+Input historical data comes from the `orders/` and `alerts/` prefixes above.
 
 ## Analytics Implemented
 
@@ -115,16 +119,20 @@ Use one of the standard approaches:
 2. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, optional `AWS_SESSION_TOKEN`)
 3. IAM role (if running inside AWS environment)
 
+Lab environments with temporary credentials are supported as long as those values are exposed via environment variables (including `AWS_SESSION_TOKEN` when provided).
+
 Spark/Hadoop will use the default AWS provider chain.
 
 ## Configuration
 
 Defaults are in `src/main/resources/batch-defaults.properties`:
 
-- `orders.path=s3://pfsd-order-history/orders/`
-- `alerts.path=s3://pfsd-order-history/alerts/`
+- `orders.path=s3a://pfsd-order-history/orders/`
+- `alerts.path=s3a://pfsd-order-history/alerts/`
 - `output.path=output`
 - `top.n=10`
+
+`output.path` can be local (for example `output` or `output/run-20260424-1500`) or S3 (for example `s3a://pfsd-order-history/reports/run-20260424-1500`).
 
 Overrides are supported through command args or env vars.
 
@@ -150,16 +158,22 @@ Overrides are supported through command args or env vars.
 sbt compile
 ```
 
-### 2) Run with defaults
+### 2) Run locally with local output (default)
 
 ```bash
 sbt run
 ```
 
-### 3) Run with explicit paths
+### 3) Run locally with explicit local output
 
 ```bash
-sbt "run --ordersPath=s3://pfsd-order-history/orders/ --alertsPath=s3://pfsd-order-history/alerts/ --outputPath=output"
+sbt "run --ordersPath=s3a://pfsd-order-history/orders/ --alertsPath=s3a://pfsd-order-history/alerts/ --outputPath=output/run-20260424-1500"
+```
+
+### 4) Run with S3 output for reports
+
+```bash
+sbt "run --ordersPath=s3a://pfsd-order-history/orders/ --alertsPath=s3a://pfsd-order-history/alerts/ --outputPath=s3a://pfsd-order-history/reports/run-20260424-1500"
 ```
 
 ## Expected Outputs
