@@ -116,7 +116,7 @@ object SyntheticHistoryGenerator {
     val storedAt = order.createdAt.plusSeconds(random.nextInt(300).toLong)
     val createdAtArray = timestampArrayJson(order.createdAt)
 
-    s"""{"eventType":"ORDER_CREATED","storedAt":"${storedAt.format(StoredAtFormatter)}","orderId":${order.orderId},"userId":${order.userId},"total":${formatAmount(order.total)},"itemCount":${order.itemCount},"createdAt":$createdAtArray}"""
+    s"""{"eventType":"CREATED","storedAt":"${storedAt.format(StoredAtFormatter)}","orderId":${order.orderId},"userId":${order.userId},"total":${formatAmount(order.total)},"itemCount":${order.itemCount},"createdAt":$createdAtArray}"""
   }
 
   private def alertJsonLine(order: OrderSeed, random: Random): String = {
@@ -127,7 +127,7 @@ object SyntheticHistoryGenerator {
     val reasonsJson = reasons.map(r => "\"" + escapeJson(r) + "\"").mkString("[", ",", "]")
     val detectedAtArray = timestampArrayJson(detectedAt)
 
-    s"""{"eventType":"ORDER_ALERT","storedAt":"${storedAt.format(StoredAtFormatter)}","orderId":${order.orderId},"userId":${order.userId},"total":${formatAmount(order.total)},"razones":$reasonsJson,"detectedAt":$detectedAtArray}"""
+    s"""{"eventType":"ALERT","storedAt":"${storedAt.format(StoredAtFormatter)}","orderId":${order.orderId},"userId":${order.userId},"total":${formatAmount(order.total)},"razones":$reasonsJson,"detectedAt":$detectedAtArray}"""
   }
 
   private def selectReasons(order: OrderSeed, random: Random): Vector[String] = {
